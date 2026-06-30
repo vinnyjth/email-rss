@@ -1,0 +1,13 @@
+node_modules/
+bin/
+dist/
+*.log
+.DS_Store
+# Pulumi local state / backups (using a backend, not committed local state)
+.pulumi/
+Pulumi.*.yaml.bak
+# Per-stack config holds environment-specific values + the encrypted secret.
+# Excluded from the public repo; copy Pulumi.dev.yaml.example to start a stack.
+Pulumi.dev.yaml
+Pulumi.*.yaml
+!Pulumi.*.yaml.example

@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Email → Podcast</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+        max-width: 36rem; margin: 4rem auto; padding: 0 1.25rem; line-height: 1.5;
+      }
+      h1 { font-size: 1.6rem; margin-bottom: 0.25rem; }
+      p.lede { opacity: 0.8; margin-top: 0; }
+      form { display: flex; gap: 0.5rem; margin: 1.5rem 0; }
+      input[type="email"] {
+        flex: 1; padding: 0.7rem 0.9rem; font-size: 1rem;
+        border: 1px solid #8884; border-radius: 8px;
+      }
+      button {
+        padding: 0.7rem 1.1rem; font-size: 1rem; border: 0; border-radius: 8px;
+        background: #3b6cff; color: #fff; cursor: pointer;
+      }
+      button:disabled { opacity: 0.6; cursor: default; }
+      .result {
+        display: none; border: 1px solid #8884; border-radius: 10px;
+        padding: 1rem 1.1rem; margin-top: 1rem;
+      }
+      .result.show { display: block; }
+      .field { margin: 0.75rem 0; }
+      .field label { font-size: 0.8rem; text-transform: uppercase; opacity: 0.6; }
+      .row { display: flex; gap: 0.5rem; align-items: center; }
+      code {
+        flex: 1; background: #8881; padding: 0.5rem 0.6rem; border-radius: 6px;
+        font-size: 0.9rem; overflow-wrap: anywhere;
+      }
+      .copy { background: #6663; color: inherit; padding: 0.5rem 0.7rem; }
+      .error { color: #d33; margin-top: 0.5rem; }
+      ol { opacity: 0.85; font-size: 0.95rem; }
+    </style>
+  </head>
+  <body>
+    <h1>Email → Podcast</h1>
+    <p class="lede">
+      Get a private forwarding address. Every email you forward to it is read
+      aloud and added to a podcast feed only you have the link to.
+    </p>
+
+    <form id="reg">
+      <input id="email" type="email" placeholder="you@example.com" required />
+      <button id="submit" type="submit">Get my feed</button>
+    </form>
+    <div class="error" id="error"></div>
+
+    <div class="result" id="result">
+      <div class="field">
+        <label>Forward emails to</label>
+        <div class="row">
+          <code id="addr"></code>
+          <button class="copy" data-target="addr">Copy</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>Your private podcast feed</label>
+        <div class="row">
+          <code id="rss"></code>
+          <button class="copy" data-target="rss">Copy</button>
+        </div>
+      </div>
+      <ol>
+        <li>Forward any email to the address above.</li>
+        <li>Wait a minute or two for it to be converted to audio.</li>
+        <li>Subscribe to the feed URL in your podcast app.</li>
+      </ol>
+    </div>
+
+    <script>
+      // Injected at deploy time.
+      const API_URL = "__API_URL__";
+
+      const form = document.getElementById("reg");
+      const errEl = document.getElementById("error");
+      const resultEl = document.getElementById("result");
+      const btn = document.getElementById("submit");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errEl.textContent = "";
+        btn.disabled = true;
+        btn.textContent = "Working…";
+        try {
+          const email = document.getElementById("email").value.trim();
+          const res = await fetch(API_URL + "/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "Registration failed");
+          document.getElementById("addr").textContent = data.forwardAddress;
+          document.getElementById("rss").textContent = data.rssUrl;
+          resultEl.classList.add("show");
+        } catch (err) {
+          errEl.textContent = err.message;
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Get my feed";
+        }
+      });
+
+      document.querySelectorAll(".copy").forEach((b) => {
+        b.addEventListener("click", () => {
+          const text = document.getElementById(b.dataset.target).textContent;
+          navigator.clipboard.writeText(text);
+          b.textContent = "Copied";
+          setTimeout(() => (b.textContent = "Copy"), 1500);
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "email-rss",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Forward emails to a unique address; each is TTS'd and published on a private podcast RSS feed. Serverless AWS, infra in Pulumi.",
+  "main": "index.ts",
+  "scripts": {
+    "build:handlers": "ts-node infra/build.ts",
+    "preview": "pulumi preview",
+    "up": "pulumi up",
+    "destroy": "pulumi destroy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pulumi/aws": "^6.66.0",
+    "@pulumi/pulumi": "^3.140.0"
+  },
+  "devDependencies": {
+    "@aws-sdk/client-dynamodb": "^3.700.0",
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@aws-sdk/client-ssm": "^3.700.0",
+    "@aws-sdk/lib-dynamodb": "^3.700.0",
+    "@types/aws-lambda": "^8.10.145",
+    "@types/html-to-text": "^9.0.4",
+    "@types/mailparser": "^3.4.5",
+    "@types/node": "^20.17.0",
+    "esbuild": "^0.24.0",
+    "html-to-text": "^9.0.5",
+    "mailparser": "^3.7.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.0"
+  }
+}

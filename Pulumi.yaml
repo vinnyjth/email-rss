@@ -1,0 +1,13 @@
+name: email-rss
+runtime: nodejs
+description: Forward emails to a unique address; each is TTS'd and published on a private podcast RSS feed. Serverless AWS (S3/SES/Lambda/DynamoDB) in Pulumi.
+
+# Stack configuration lives in Pulumi.<stack>.yaml. Keys consumed by index.ts:
+#   aws:region                (provider; default us-east-1)
+#   email-rss:domain          (required) apex domain you control
+#   email-rss:inboxSubdomain  (optional, default "inbox")
+#   email-rss:route53ZoneId   (optional) Route53 zone id for <domain>
+#   email-rss:appHost         (optional) custom hostname for the app
+#   email-rss:acmCertArn      (optional) ACM cert (us-east-1) for appHost
+#   email-rss:ttsVoice        (optional, default "jake")
+#   email-rss:bosonApiKey     (required, secret) -> synced to SSM at deploy
