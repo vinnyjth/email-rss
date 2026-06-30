@@ -9,5 +9,5 @@ description: Forward emails to a unique address; each is TTS'd and published on 
 #   email-rss:route53ZoneId   (optional) Route53 zone id for <domain>
 #   email-rss:appHost         (optional) custom hostname for the app
 #   email-rss:acmCertArn      (optional) ACM cert (us-east-1) for appHost
-#   email-rss:ttsVoice        (optional, default "jake")
-#   email-rss:bosonApiKey     (required, secret) -> synced to SSM at deploy
+#   email-rss:ttsVoice        (optional, default "Matthew") Amazon Polly voice
+#   email-rss:ttsEngine       (optional, default "neural")  neural|standard|generative

@@ -2,14 +2,11 @@ import { simpleParser } from "mailparser";
 import { convert } from "html-to-text";
 
 /**
- * Cap synthesized content. The body is chunked and each chunk is sent to Boson
- * separately (see tts.ts), but Boson's free-preview endpoint is slow (~35s per
- * ~450 chars) with a 60s gateway timeout, so synthesizing an entire long
- * newsletter would take many minutes and routinely fail. We therefore cap to
- * the subject + opening (~3 small chunks), which reliably produces audio.
- * TODO: when on a faster/paid TTS tier, raise this and lift the per-request cap.
+ * Cap synthesized content as a safety bound. Polly is fast (~1-2s per 3000-char
+ * chunk), so this comfortably covers a full long newsletter within the Lambda
+ * budget; the cap just guards against pathologically huge messages.
  */
-const MAX_TTS_CHARS = 1350;
+const MAX_TTS_CHARS = 100000;
 
 export interface ParsedEmail {
   subject: string;

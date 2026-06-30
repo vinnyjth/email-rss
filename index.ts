@@ -17,8 +17,9 @@ const inboxDomain = `${inboxSubdomain}.${domain}`;
 const route53ZoneId = cfg.get("route53ZoneId") ?? "";
 const appHost = cfg.get("appHost") ?? "";
 const acmCertArn = cfg.get("acmCertArn") ?? "";
-const ttsVoice = cfg.get("ttsVoice") ?? "jake";
-const bosonApiKey = cfg.requireSecret("bosonApiKey");
+// Amazon Polly voice + engine (e.g. Matthew/Joanna; neural | standard | generative).
+const ttsVoice = cfg.get("ttsVoice") ?? "Matthew";
+const ttsEngine = cfg.get("ttsEngine") ?? "neural";
 
 const region = aws.config.requireRegion();
 
@@ -46,8 +47,8 @@ const { identity, dkim } = createEmail({
   usersTable: users,
   episodesTable: episodes,
   cdnDomain,
-  bosonApiKey,
   ttsVoice,
+  ttsEngine,
 });
 
 // DNS (Route53 if a zone is configured; otherwise values are exported below).

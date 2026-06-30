@@ -3,7 +3,9 @@ config:
   # Apex domain you control; inbound mail uses <inboxSubdomain>.<domain>.
   email-rss:domain: example.com
   email-rss:inboxSubdomain: inbox
-  email-rss:ttsVoice: jake
+  # Amazon Polly voice + engine. Engine: neural | standard | generative.
+  email-rss:ttsVoice: Matthew
+  email-rss:ttsEngine: neural
   # Optional: if your DNS is in Route53, set the zone id to auto-create records.
   # email-rss:route53ZoneId: Z0123456789ABCDEFGHIJ
   # Optional custom hostname (ACM cert must be in us-east-1):
@@ -11,6 +13,3 @@ config:
   # email-rss:acmCertArn: arn:aws:acm:us-east-1:123456789012:certificate/...
   # Optional: pin a local AWS profile for this stack:
   # aws:profile: your-profile
-  #
-  # Set the Boson API key as an ENCRYPTED secret (never commit it in plaintext):
-  #   pulumi config set --secret email-rss:bosonApiKey <your-key>

@@ -10,8 +10,8 @@ interface EmailArgs {
   usersTable: aws.dynamodb.Table;
   episodesTable: aws.dynamodb.Table;
   cdnDomain: pulumi.Input<string>;
-  bosonApiKey: pulumi.Input<string>;
   ttsVoice: pulumi.Input<string>;
+  ttsEngine: pulumi.Input<string>;
 }
 
 const INCOMING_PREFIX = "raw/";
@@ -22,12 +22,6 @@ const INCOMING_PREFIX = "raw/";
  */
 export function createEmail(args: EmailArgs) {
   const accountId = aws.getCallerIdentityOutput().accountId;
-
-  // Boson API key in SSM Parameter Store (SecureString).
-  const bosonParam = new aws.ssm.Parameter("boson-api-key", {
-    type: "SecureString",
-    value: args.bosonApiKey,
-  });
 
   // SES identity + DKIM for the inbox subdomain.
   const identity = new aws.ses.DomainIdentity("inbox-identity", {
@@ -41,8 +35,7 @@ export function createEmail(args: EmailArgs) {
   const fn = makeHandler({
     name: "process-email",
     entry: "process-email.ts",
-    // Boson's free preview is slow (~35s/chunk) and we retry on 5xx, so allow
-    // ample headroom for a few sequential chunk syntheses.
+    // Polly is fast (~1-2s/chunk); a long email is a few dozen chunks at most.
     timeout: 300,
     memory: 512,
     environment: {
@@ -53,8 +46,8 @@ export function createEmail(args: EmailArgs) {
       INBOX_DOMAIN: args.inboxDomain,
       USERS_TABLE: args.usersTable.name,
       EPISODES_TABLE: args.episodesTable.name,
-      BOSON_API_KEY_PARAM: bosonParam.name,
       TTS_VOICE: args.ttsVoice,
+      TTS_ENGINE: args.ttsEngine,
     },
     policy: {
       Version: "2012-10-17",
@@ -81,8 +74,9 @@ export function createEmail(args: EmailArgs) {
         },
         {
           Effect: "Allow",
-          Action: "ssm:GetParameter",
-          Resource: bosonParam.arn,
+          // Polly does not support resource-level permissions.
+          Action: "polly:SynthesizeSpeech",
+          Resource: "*",
         },
       ],
     },
@@ -94,6 +88,13 @@ export function createEmail(args: EmailArgs) {
     function: fn.name,
     principal: "ses.amazonaws.com",
     sourceAccount: accountId,
+  });
+
+  // SES invokes asynchronously; disable Lambda's automatic retries so a failed
+  // synthesis doesn't re-run and publish a duplicate episode.
+  new aws.lambda.FunctionEventInvokeConfig("process-email-no-retry", {
+    functionName: fn.name,
+    maximumRetryAttempts: 0,
   });
 
   // Receipt rule set + rule.

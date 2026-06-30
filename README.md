@@ -1,9 +1,8 @@
 # email-rss — forward emails into a private podcast
 
 Register with your email, get a unique forwarding address, and forward any email
-to it. Each forwarded email is converted to speech (Boson AI **Higgs Audio v3**)
-and published as an episode on a private podcast RSS feed only you have the link
-to.
+to it. Each forwarded email is converted to speech (**Amazon Polly**) and
+published as an episode on a private podcast RSS feed only you have the link to.
 
 Static UI + audio + RSS live on **S3** (behind CloudFront); the dynamic pieces
 run on **SES inbound + Lambda + DynamoDB**. All infrastructure is **Pulumi
@@ -18,7 +17,7 @@ Registration:  browser ──► CloudFront/S3 (form) ──► API Gateway ─�
 Forwarded mail: sender ──► MX inbox.<domain> ──► SES receipt rule
                   ├─ (1) S3 action      ──► S3(incoming): raw MIME
                   └─ (2) Lambda action  ──► Lambda(processEmail)
-                            parse MIME → Boson Higgs TTS → MP3
+                            parse MIME → Amazon Polly TTS → MP3
                             → S3(media)/audio/<feedId>/<guid>.mp3
                             → DynamoDB(Episodes)
                             → rebuild RSS → S3(media)/feeds/<feedId>.xml
@@ -34,8 +33,9 @@ Podcast app:   CloudFront ──► S3(media): /feeds/*.xml, /audio/*.mp3
   there).
 - A domain you control. Inbound mail uses a subdomain (`inbox.<domain>`) so your
   root MX is never touched.
-- A Boson AI API key — get one free at <https://boson.ai/workspace> (Higgs Audio
-  v3 TTS is in free public preview).
+- TTS uses **Amazon Polly** (same AWS account) — no extra API key. Voice/engine
+  are configurable (`email-rss:ttsVoice` / `email-rss:ttsEngine`); default is
+  `Matthew` / `neural`. Use `generative` for the most natural voices.
 - Node 18+ locally (handlers are bundled with esbuild at `pulumi up` time).
 
 ## Configure
@@ -47,8 +47,8 @@ pulumi stack init dev
 pulumi config set aws:region us-east-1
 pulumi config set email-rss:domain example.com           # your apex domain
 pulumi config set email-rss:inboxSubdomain inbox          # optional (default: inbox)
-pulumi config set email-rss:ttsVoice jake                 # optional Higgs voice
-pulumi config set --secret email-rss:bosonApiKey <key>    # Boson API key -> SSM
+pulumi config set email-rss:ttsVoice Matthew              # optional Polly voice
+pulumi config set email-rss:ttsEngine neural              # neural | standard | generative
 
 # If your DNS is in Route53, set the zone id so MX/TXT/DKIM are created for you:
 pulumi config set email-rss:route53ZoneId Z0123456789ABC  # optional
@@ -103,20 +103,21 @@ infra/
   storage.ts            S3 web / media / incoming buckets + policies
   cdn.ts                CloudFront (OAC) + bucket read policies
   api.ts                HTTP API + register Lambda
-  email.ts              SES identity/DKIM + receipt rule + processEmail Lambda + Boson SSM
+  email.ts              SES identity/DKIM + receipt rule + processEmail Lambda
   dns.ts                Route53 records (or values to add manually)
   lambda.ts             esbuild bundling + Lambda/role factory
 handlers/
   register.ts           POST /register
   process-email.ts      SES inbound -> TTS -> episode -> RSS
-  shared/               ids, tts (Boson), mime, mp3 duration, rss, dynamo
+  shared/               ids, tts (Polly), mime, mp3 duration, rss, dynamo
 web/index.html          registration page (API URL injected at deploy)
 ```
 
 ## Notes & limitations
 
-- **Long emails** are truncated before synthesis (`MAX_TTS_CHARS` in
-  `handlers/shared/mime.ts`). TODO: chunk + concatenate MP3 segments.
+- **Long emails** are chunked at Polly's 3000-char limit and the MP3 segments
+  are concatenated; a safety cap (`MAX_TTS_CHARS` in `handlers/shared/mime.ts`,
+  default 100k chars) bounds pathologically huge messages.
 - **Feed privacy** relies on the unguessable feed token in the URL; there is no
   per-feed auth.
 - **Confirmation email:** v1 only shows the address/URL on the page. Emailing it
@@ -125,7 +126,7 @@ web/index.html          registration page (API URL injected at deploy)
   verdicts are available in the receipt and can be enforced in `processEmail` as
   a later hardening step.
 - **Cost:** all serverless / pay-per-use (DynamoDB on-demand, Lambda, S3,
-  CloudFront PriceClass_100); Boson is free during public preview.
+  CloudFront PriceClass_100, Polly per-character).
 
 ## Teardown
 

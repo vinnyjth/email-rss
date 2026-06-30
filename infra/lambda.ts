@@ -27,7 +27,8 @@ export function bundle(name: string, entry: string): pulumi.asset.AssetArchive {
     format: "cjs",
     sourcemap: false,
     minify: false,
-    external: ["@aws-sdk/*"],
+    // Bundle AWS SDK clients rather than relying on the runtime's bundled set
+    // (e.g. @aws-sdk/client-polly is not guaranteed to be preinstalled).
   });
 
   return new pulumi.asset.AssetArchive({
